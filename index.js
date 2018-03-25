@@ -7,8 +7,8 @@
  */
 
 const Redis  = require('ioredis')
-const dyn    = require('../helpers/dynamics')
-const Config = require('../helpers/config')
+const dyn    = require('triton-core/dynamics')
+const Config = require('triton-core/config')
 const Trello = require('trello')
 const debug  = require('debug')('media:beholder')
 const moment = require('moment')
