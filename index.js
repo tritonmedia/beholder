@@ -87,7 +87,7 @@ const init = async () => {
       } else if (percent === 0 && subTask === subTasks) {
         child.info('started stage')
         redis.hset(key, 'started', now)
-      } else if (percent === 0 && subTask === 0 && subTasks !== 0) {
+      } else if (percent === 0 && subTasks) {
         child.info('started sub-task')
         return redis.hset(`${key}:${subTask}`, 'started', now)
       } else if (percent === 100 && subTask) {
@@ -98,6 +98,11 @@ const init = async () => {
         const fromNow = moment().diff(startedAt, 'minutes', true)
 
         await comment(job, `${stage}: Finished sub-task **${subTask}** out of **${subTasks}** in **${fromNow} minutes**`)
+
+        if (subTask === 1) {
+          await comment(job, `${stage}: Estimating completion in **${fromNow * subTasks} minutes**`)
+        }
+
         return redis.hset(`${key}:${subTask}`, 'finished', now)
       }
 
