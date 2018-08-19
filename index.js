@@ -54,6 +54,8 @@ const init = async () => {
         started,
         stage,
         percent,
+        subTask,
+        subTasks
       })
 
       if (stage === 'queue') return // skip error/queue events for now
@@ -63,7 +65,6 @@ const init = async () => {
       }
 
       child.debug('processing', data)
-
 
       if (percent === 100 && subTask === subTasks) {
         redis.hset(key, 'finished', now)
