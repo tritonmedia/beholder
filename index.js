@@ -97,7 +97,7 @@ const init = async () => {
         const startedAt = moment(started)
         const fromNow = moment().diff(startedAt, 'minutes', true)
 
-        await comment(job, `${stage}" Finished sub-task **${subTask}** out of **${subTasks}** in **${fromNow} minutes**`)
+        await comment(job, `${stage}: Finished sub-task **${subTask}** out of **${subTasks}** in **${fromNow} minutes**`)
         redis.hset(`${key}:${subTask}`, 'finished', now)
       }
 
