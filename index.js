@@ -6,30 +6,30 @@
  * @version 1
  */
 
-const Redis  = require('ioredis')
-const dyn    = require('triton-core/dynamics')
+const Redis = require('ioredis')
+const dyn = require('triton-core/dynamics')
 const Config = require('triton-core/config')
 const Trello = require('trello')
-const debug  = require('debug')('media:beholder')
 const moment = require('moment')
-
-const metricsDb = dyn('redis')+'/1'
-debug('metrics:address', metricsDb)
-const listener = new Redis(metricsDb)
-const redis    = new Redis(metricsDb)
-
-listener.subscribe('progress', err => {
-  if(err) throw err;
+const path = require('path')
+const logger = require('pino')({
+  name: path.basename(__filename)
 })
 
+const metricsDb = dyn('redis') + '/1'
+const listener = new Redis(metricsDb)
+const redis = new Redis(metricsDb)
 
+listener.subscribe('progress', err => {
+  if (err) throw err
+})
 
 const init = async () => {
   const config = await Config('events')
   const trello = new Trello(config.keys.trello.key, config.keys.trello.token)
 
   const comment = async (job, text) => {
-    debug('trello:comment', job, text)
+    logger.info('creating comment on', job, 'with text:', text)
 
     await trello.makeRequest('post', `/1/cards/${job}/actions/comments`, {
       text: text || 'Failed to retrieve comment text.'
@@ -45,26 +45,38 @@ const init = async () => {
      */
     progress: async (job, data) => {
       const { percent, stage } = data
-      const key                = `job:${job}:${stage}`
-      const now                = moment().toISOString()
+      const key = `job:${job}:${stage}`
+      const now = moment().toISOString()
+      const started = await redis.hget(key, 'started')
 
-      if(stage === 'queue') return; // skip error/queue events for now
+      const child = logger.child({
+        job,
+        started,
+        stage,
+        percent
+      })
 
-      if(stage === 'error') {
-        return await comment(job, 'Status was set to errored.');
+      if (stage === 'queue') return // skip error/queue events for now
+
+      if (stage === 'error') {
+        return comment(job, 'Status was set to errored.')
       }
 
-      if(percent === 100) {
-        redis.hset(key, 'finished', now)
-        debug('progress', job, 'finished', stage)
+      child.debug('processing', data)
 
-        const startedAt = moment(await redis.hget(key, 'started'))
-        const fromNow   = moment().diff(startedAt, 'minutes', true)
-        debug('process:finished', fromNow)
+      if (percent === 100) {
+        redis.hset(key, 'finished', now)
+
+        child.info('finished stage')
+
+        const startedAt = moment(started)
+        const fromNow = moment().diff(startedAt, 'minutes', true)
+
+        child.info('took', fromNow)
 
         await comment(job, `Finished stage '${stage}' in **${fromNow} minutes**.`)
-      } else if(percent === 0) {
-        debug('progress', job, 'started', stage)
+      } else if (percent === 0) {
+        child.info('started stage')
         redis.hset(key, 'started', now)
       }
 
@@ -76,10 +88,9 @@ const init = async () => {
     const data = JSON.parse(msg)
     const event = events[chan]
 
-    if(!event) return debug('metric', chan, 'not implemented')
+    if (!event) return debug('metric', chan, 'not implemented')
     await event(data.job, data)
   })
 }
-
 
 init()
