@@ -44,10 +44,17 @@ const init = async () => {
      * @return {Promise}      ...
      */
     progress: async (job, data) => {
-      const { percent, stage, subTask, subTasks } = data
+      const { percent, stage } = data
       const key = `job:${job}:${stage}`
       const now = moment().toISOString()
       const started = await redis.hget(key, 'started')
+
+      if (!data.data) data.data = {
+        subTask: 0,
+        subTasks: 0
+      }
+
+      const { subTask, subTasks } = data.data
 
       const child = logger.child({
         job,
@@ -80,9 +87,18 @@ const init = async () => {
       } else if (percent === 0 && subTask === subTasks) {
         child.info('started stage')
         redis.hset(key, 'started', now)
+      } else if (percent === 0 && subTask === 0 && subTasks !== 0) {
+        child.info('started sub-task')
+        redis.hset(`${key}:${subTask}`, 'started', now)
       } else if (percent === 100 && subTask) {
         child.info('finished subTask')
-        await comment(job, `Finished sub-task '${subTask}' in stage '${stage}' out of '${subTasks}'`)
+
+        const started = await redis.hget(`${key}:${subTask}`, 'started')
+        const startedAt = moment(started)
+        const fromNow = moment().diff(startedAt, 'minutes', true)
+
+        await comment(job, `${stage}" Finished sub-task **${subTask}** out of **${subTasks}** in **${fromNow} minutes**`)
+        redis.hset(`${key}:${subTask}`, 'finished', now)
       }
 
       redis.hset(key, 'percent', percent)
