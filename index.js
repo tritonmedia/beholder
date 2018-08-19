@@ -44,7 +44,7 @@ const init = async () => {
      * @return {Promise}      ...
      */
     progress: async (job, data) => {
-      const { percent, stage } = data
+      const { percent, stage, subTask, subTasks } = data
       const key = `job:${job}:${stage}`
       const now = moment().toISOString()
       const started = await redis.hget(key, 'started')
@@ -53,7 +53,7 @@ const init = async () => {
         job,
         started,
         stage,
-        percent
+        percent,
       })
 
       if (stage === 'queue') return // skip error/queue events for now
@@ -64,7 +64,8 @@ const init = async () => {
 
       child.debug('processing', data)
 
-      if (percent === 100) {
+
+      if (percent === 100 && subTask === subTasks) {
         redis.hset(key, 'finished', now)
 
         child.info('finished stage')
@@ -75,9 +76,12 @@ const init = async () => {
         child.info('took', fromNow)
 
         await comment(job, `Finished stage '${stage}' in **${fromNow} minutes**.`)
-      } else if (percent === 0) {
+      } else if (percent === 0 && subTask === subTasks) {
         child.info('started stage')
         redis.hset(key, 'started', now)
+      } else if (percent === 100 && subTask) {
+        child.info('finished subTask')
+        await comment(job, `Finished sub-task '${subTask}' in stage '${stage}' out of '${subTasks}'`)
       }
 
       redis.hset(key, 'percent', percent)
