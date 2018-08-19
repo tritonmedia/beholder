@@ -91,6 +91,8 @@ const init = async () => {
     if (!event) return debug('metric', chan, 'not implemented')
     await event(data.job, data)
   })
+
+  logger.info('initialized')
 }
 
 init()
