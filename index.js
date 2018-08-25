@@ -44,14 +44,16 @@ const init = async () => {
      * @return {Promise}      ...
      */
     progress: async (job, data) => {
-      const { percent, stage } = data
+      const { percent, stage, host } = data
       const key = `job:${job}:${stage}`
       const now = moment().toISOString()
       const started = await redis.hget(key, 'started')
 
-      if (!data.data) data.data = {
-        subTask: 0,
-        subTasks: 0
+      if (!data.data) {
+        data.data = {
+          subTask: 0,
+          subTasks: 0
+        }
       }
 
       const { subTask, subTasks } = data.data
@@ -85,8 +87,9 @@ const init = async () => {
 
         await comment(job, `Finished stage '${stage}' in **${fromNow} minutes**.`)
       } else if (percent === 0 && subTask === subTasks) {
-        child.info('started stage')
+        child.info('started stage on', host)
         redis.hset(key, 'started', now)
+        await comment(job, `Started stage **${stage}** on _${host}_`)
       } else if (percent === 0 && subTasks) {
         child.info('started sub-task')
         return redis.hset(`${key}:${subTask}`, 'started', now)
@@ -114,7 +117,7 @@ const init = async () => {
     const data = JSON.parse(msg)
     const event = events[chan]
 
-    if (!event) return debug('metric', chan, 'not implemented')
+    if (!event) return logger.warn('metric', chan, 'not implemented')
     await event(data.job, data)
   })
 
