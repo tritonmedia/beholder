@@ -56,6 +56,10 @@ const init = async () => {
       const percentBefore = await redis.hget(key, 'percent')
       const percent = parseInt(percentBefore, 10)
 
+      if (percent === 100 || percent === 0) {
+        continue
+      }
+
       // calc eta
       const started = await redis.hget(key, 'started')
       const startedAt = moment(started)
@@ -63,7 +67,7 @@ const init = async () => {
       // mins eclapsed / total percent * remainder percent
       const etaMins = Math.floor((fromNow / percent) * (100 - percent))
       const dur = moment.duration(etaMins, 'minutes')
-      
+
       await comment(jobID, `download: progress **${Math.floor(percent)}%** (eta: ${dur.humanize()})`)
     }
   }
