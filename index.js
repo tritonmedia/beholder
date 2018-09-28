@@ -45,6 +45,44 @@ const init = async () => {
     })
   }
 
+  const checkDownloadStatus = async () => {
+    const downloads = await redis.keys('job:*:download')
+    for (let key of downloads) {
+      const keySplit = key.split(':')
+      const jobID = keySplit[1]
+
+      logger.info('checking download status for', key, `(job: ${jobID})`)
+
+      const percentBefore = await redis.hget(key, 'percent')
+      const percent = Math.floor(parseInt(percentBefore, 10))
+
+      // calc eta
+      const started = await redis.hget(key, 'started')
+      const startedAt = moment(started)
+      const fromNow = moment().diff(startedAt, 'minutes', true)
+      // mins eclapsed / total percent * remainder percent
+      const eta = Math.floor((fromNow / percent) * (100 - percent))
+
+      logger.info(jobID, 'is at', percent)
+
+      if (percent === 100) {
+        await redis.del(key)
+        continue
+      }
+
+      if (percent === 0) {
+        continue
+      }
+
+      await comment(jobID, `download: progress **${percent}%** (eta: ${eta}m)`)
+    }
+  }
+
+  // every 5 minutes
+  setInterval(checkDownloadStatus, 60000 * 5)
+
+  logger.info('started download watcher')
+
   const events = {
     /**
      * Emit progress events
@@ -98,7 +136,7 @@ const init = async () => {
         await comment(job, `Started stage **${stage}** on _${host}_`)
       } else if (percent === 0 && subTasks) {
         child.info('started sub-task')
-        return redis.hset(`${key}:${subTask}`, 'started', now)
+        redis.hset(`${key}:${subTask}`, 'started', now)
       } else if (percent === 100 && subTask) {
         child.info('finished subTask')
 
@@ -112,7 +150,7 @@ const init = async () => {
           await comment(job, `${stage}: Estimating completion in **${fromNow * subTasks} minutes**`)
         }
 
-        return redis.hset(`${key}:${subTask}`, 'finished', now)
+        redis.hset(`${key}:${subTask}`, 'finished', now)
       }
 
       redis.hset(key, 'percent', percent)
@@ -126,7 +164,7 @@ const init = async () => {
     error: async (job, err) => {
       const { stage, data } = err
 
-      await comment(job, `${stage}: Failed: ${data.message}.`)
+      await comment(job, `${stage}: Failed: ${data.message}`)
 
       const potentialFix = knownErrors[data.code]
       if (potentialFix) {
