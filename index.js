@@ -54,32 +54,24 @@ const init = async () => {
       logger.info('checking download status for', key, `(job: ${jobID})`)
 
       const percentBefore = await redis.hget(key, 'percent')
-      const percent = Math.floor(parseInt(percentBefore, 10))
+      const percent = parseInt(percentBefore, 10)
 
       // calc eta
       const started = await redis.hget(key, 'started')
       const startedAt = moment(started)
       const fromNow = moment().diff(startedAt, 'minutes', true)
       // mins eclapsed / total percent * remainder percent
-      const eta = Math.floor((fromNow / percent) * (100 - percent))
-
-      logger.info(jobID, 'is at', percent)
-
-      if (percent === 100) {
-        await redis.del(key)
-        continue
-      }
-
-      if (percent === 0) {
-        continue
-      }
-
-      await comment(jobID, `download: progress **${percent}%** (eta: ${eta}m)`)
+      const etaMins = Math.floor((fromNow / percent) * (100 - percent))
+      const dur = moment.duration(etaMins, 'minutes')
+      
+      await comment(jobID, `download: progress **${Math.floor(percent)}%** (eta: ${dur.humanize()})`)
     }
   }
 
   // every 5 minutes
   setInterval(checkDownloadStatus, 60000 * 5)
+
+  checkDownloadStatus()
 
   logger.info('started download watcher')
 
