@@ -23,6 +23,9 @@ const redis = new Redis(metricsDb)
 listener.subscribe('progress', err => {
   if (err) throw err
 })
+listener.subscribe('error', err => {
+  if (err) throw err
+})
 
 // TODO: move this somewhere nice
 // Suggested Fix: <message>
