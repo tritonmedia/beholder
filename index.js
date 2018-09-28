@@ -24,6 +24,12 @@ listener.subscribe('progress', err => {
   if (err) throw err
 })
 
+// TODO: move this somewhere nice
+// Suggested Fix: <message>
+const knownErrors = {
+  ERRDLSTALL: 'Try finding another source.'
+}
+
 const init = async () => {
   const config = await Config('events')
   const trello = new Trello(config.keys.trello.key, config.keys.trello.token)
@@ -68,10 +74,7 @@ const init = async () => {
       })
 
       if (stage === 'queue') return // skip error/queue events for now
-
-      if (stage === 'error') {
-        return comment(job, 'Status was set to errored.')
-      }
+      if (stage === 'error') return // this is handled by the 'error' metric now.
 
       child.debug('processing', data)
 
@@ -110,6 +113,22 @@ const init = async () => {
       }
 
       redis.hset(key, 'percent', percent)
+    },
+
+    /**
+     * Process reported errors
+     * @param {Object} job jobID
+     * @param {Object} err Error object
+     */
+    error: async (job, err) => {
+      const { stage, data } = err
+
+      await comment(job, `${stage}: Failed: ${data.message}.`)
+
+      const potentialFix = knownErrors[data.code]
+      if (potentialFix) {
+        await comment(job, `Suggested fix: ${potentialFix}`)
+      }
     }
   }
 
