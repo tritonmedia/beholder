@@ -136,7 +136,14 @@ const init = async () => {
   }
 
   listener.on('message', async (chan, msg) => {
-    const data = JSON.parse(msg)
+    let data
+    try {
+      data = JSON.parse(msg)
+    } catch (err) {
+      logger.error('Failed to parse msg:', err)
+      return
+    }
+
     const event = events[chan]
 
     if (!event) return logger.warn('metric', chan, 'not implemented')
