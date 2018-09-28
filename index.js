@@ -73,7 +73,7 @@ const init = async () => {
   }
 
   // every 5 minutes
-  setInterval(checkDownloadStatus, 60000 * 5)
+  setInterval(checkDownloadStatus, 60000 * 10)
 
   checkDownloadStatus()
 
