@@ -12,6 +12,7 @@ const Config = require('triton-core/config')
 const Trello = require('trello')
 const moment = require('moment')
 const path = require('path')
+const fs = require('fs-extra')
 const logger = require('pino')({
   name: path.basename(__filename)
 })
@@ -20,12 +21,13 @@ const metricsDb = dyn('redis') + '/1'
 const listener = new Redis(metricsDb)
 const redis = new Redis(metricsDb)
 
-listener.subscribe('progress', err => {
-  if (err) throw err
-})
-listener.subscribe('error', err => {
-  if (err) throw err
-})
+const eventTable = {}
+
+const subs = [
+  'progress',
+  'error',
+  'events'
+]
 
 // TODO: move this somewhere nice
 // Suggested Fix: <message>
@@ -34,6 +36,31 @@ const knownErrors = {
 }
 
 const init = async () => {
+  for (let sub of subs) {
+    logger.info('listening on pubsub queue:', sub)
+    await listener.subscribe(sub)
+  }
+
+  const userEvents = await fs.readdir(path.join(__dirname, 'events'))
+  userEvents.forEach(event => {
+    const registeredName = path.parse(event).name
+    const fn = require(path.join(__dirname, 'events', event))
+    if (typeof fn !== 'function') {
+      logger.warn('skipping invalid event:', registeredName, 'type is:', typeof fn)
+      return
+    }
+    eventTable[registeredName] = async function (data) {
+      return fn(redis, data, {
+        comment,
+        logger: logger.child({
+          event: registeredName
+        })
+      })
+    }
+
+    logger.info('registered event:', registeredName)
+  })
+
   const config = await Config('events')
   const trello = new Trello(config.keys.trello.key, config.keys.trello.token)
 
@@ -57,6 +84,8 @@ const init = async () => {
       const percent = parseInt(percentBefore, 10)
 
       if (percent === 100 || percent === 0) {
+        logger.info(`clearning up old download at ${percent}`)
+        await redis.del(key)
         continue
       }
 
@@ -166,6 +195,21 @@ const init = async () => {
       if (potentialFix) {
         await comment(job, `Suggested fix: ${potentialFix}`)
       }
+    },
+
+    /**
+     * Process reported events. Will one day replace the process system
+     *
+     * @param {Object} e event object to process
+     */
+    events: async e => {
+      const { event, cause } = e
+      logger.info('got event', event)
+      if (!eventTable) {
+        return logger.warn('skipping event we dont know of:', event)
+      }
+
+      eventTable[event](cause)
     }
   }
 
@@ -181,7 +225,11 @@ const init = async () => {
     const event = events[chan]
 
     if (!event) return logger.warn('metric', chan, 'not implemented')
-    await event(data.job, data)
+    if (data.job) {
+      await event(data.job, data)
+    } else {
+      await event(data)
+    }
   })
 
   logger.info('initialized')
