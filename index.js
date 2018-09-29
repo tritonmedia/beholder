@@ -84,7 +84,7 @@ const init = async () => {
       const percent = parseInt(percentBefore, 10)
 
       if (percent === 100 || percent === 0) {
-        logger.info(`clearning up old download at ${percent}`)
+        logger.info(`cleaning up old download at ${percent}`)
         await redis.del(key)
         continue
       }
@@ -205,7 +205,7 @@ const init = async () => {
     events: async e => {
       const { event, cause } = e
       logger.info('got event', event)
-      if (!eventTable) {
+      if (!eventTable[event]) {
         return logger.warn('skipping event we dont know of:', event)
       }
 
