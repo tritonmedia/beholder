@@ -32,7 +32,8 @@ const subs = [
 // TODO: move this somewhere nice
 // Suggested Fix: <message>
 const knownErrors = {
-  ERRDLSTALL: 'Try finding another source.'
+  ERRDLSTALL: 'Try finding another source.',
+  ERREARLYEXIT: 'The converter exited without finishing it\'s job. Please try again later.'
 }
 
 const init = async () => {
