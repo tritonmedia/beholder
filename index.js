@@ -40,7 +40,7 @@ const init = async () => {
     try {
       const msg = await proto.decode(telemetryProgressProto, rmsg.message.content)
 
-      const { mediaId, status, progress } = msg
+      const { mediaId, status, progress, host } = msg
 
       logger.info('processing progress update on media', mediaId, 'status', status, 'percent', progress)
       const media = await db.getByID(mediaId)
@@ -69,7 +69,11 @@ const init = async () => {
 
       // TRELLO post
       if (media.creator === 0) {
-        await comment(media.creatorId, `${statusText}: Progress ${progress}%`)
+        let commentText = `${statusText}: Progress **${progress}%**`
+        if (host) {
+          commentText += ` (_${host}_)`
+        }
+        await comment(media.creatorId, commentText)
       }
     } catch (err) {
       logger.warn(`failed to update media progress`, err.message || err)
