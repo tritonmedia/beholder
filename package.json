@@ -7,11 +7,9 @@
   "author": "Jared Allard <jaredallard@outlook.com>",
   "license": "MIT",
   "dependencies": {
-    "fs-extra": "^8.1.0",
-    "moment": "^2.24.0",
     "pino": "^5.12.6",
     "trello": "^0.9.1",
-    "triton-core": "^1.10.1"
+    "triton-core": "^1.12.3"
   },
   "devDependencies": {
     "eslint": "^6.0.1",

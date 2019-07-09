@@ -580,9 +580,9 @@ esutils@^2.0.2:
   integrity sha1-Cr9PHKpbyx96nYrMbepPqqBLrJs=
 
 external-editor@^3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/external-editor/-/external-editor-3.0.3.tgz#5866db29a97826dbe4bf3afd24070ead9ea43a27"
-  integrity sha512-bn71H9+qWoOQKyZDo25mOMVpSmXROAsTJVVVYzrrtol3d4y+AsKjf4Iwl2Q+IuT0kFSQ1qo166UuIwqYq7mGnA==
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/external-editor/-/external-editor-3.1.0.tgz#cb03f740befae03ea4d283caed2741a83f335495"
+  integrity sha512-hMQ4CX1p1izmuLYyZqLMO/qGNw10wSv9QDCPfzXfyFrOaCSSoRfqE1Kf1s5an66J5JZC62NewG+mK49jOCtQew==
   dependencies:
     chardet "^0.7.0"
     iconv-lite "^0.4.24"
@@ -1010,11 +1010,6 @@ mkdirp@^0.5.1:
   integrity sha1-MAV0OOrGz3+MR2fzhkjWaX11yQM=
   dependencies:
     minimist "0.0.8"
-
-moment@^2.24.0:
-  version "2.24.0"
-  resolved "https://registry.yarnpkg.com/moment/-/moment-2.24.0.tgz#0d055d53f5052aa653c9f6eb68bb5d12bf5c2b5b"
-  integrity sha512-bV7f+6l2QigeBBZSM/6yTNq4P2fNpSWj/0e7jQcy87A8e7o2nAfP/34/2ky5Vw4B9S446EtIhodAzkFCcR4dQg==
 
 ms@2.0.0:
   version "2.0.0"
@@ -1674,9 +1669,9 @@ trello@^0.9.1:
     restler "~3.3.0"
 
 triton-core@^1.10.1:
-  version "1.11.0"
-  resolved "https://registry.yarnpkg.com/triton-core/-/triton-core-1.11.0.tgz#6753db4552b9a504d1250e49588fee5ca53be47a"
-  integrity sha512-gZ+kBdAbU4AYg9oTocg/UOMuKdof1dtPD6lYr12OXyZtTG7Pl1EI0AGUUXmEkFH8wySrk4Vk2679fEb+HVfevQ==
+  version "1.12.3"
+  resolved "https://registry.yarnpkg.com/triton-core/-/triton-core-1.12.3.tgz#b7c4b0c3733a9b986e085cd83030a060cce1d60b"
+  integrity sha512-QZ6hGwHtS1HS1cPPNwfBi2AaCWt29tb/ckuJwdYN5TqaHfUCYs4TPi2KXoQ1Q0zv7u2NSQ6rv4pE8wRCqPyEBw==
   dependencies:
     amqp-connection-manager "^3.0.0"
     amqplib "^0.5.3"
@@ -1807,9 +1802,9 @@ xorshift@^0.2.0:
   integrity sha1-/NgiZ+k1HBPw+5xzMH8lMx0pxjo=
 
 "xtend@>=4.0.0 <4.1.0-0", xtend@^4.0.0, xtend@~4.0.0:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.1.tgz#a5c6d532be656e23db820efb943a1f04998d63af"
-  integrity sha1-pcbVMr5lbiPbgg77lDofBJmNY68=
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
+  integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
 
 yaml@0.2.3:
   version "0.2.3"
