@@ -27,6 +27,7 @@ const init = async () => {
   await amqp.connect()
 
   const telemetryProgressProto = await proto.load('api.TelemetryProgress')
+  const mediaProto = await proto.load('api.Media')
 
   const comment = async (cardId, text) => {
     logger.info('creating comment on', cardId, 'with text:', text)
@@ -45,30 +46,9 @@ const init = async () => {
       logger.info('processing progress update on media', mediaId, 'status', status, 'percent', progress)
       const media = await db.getByID(mediaId)
 
-      let statusText
-      switch (status) {
-        case 0:
-          statusText = 'QUEUED'
-          break
-        case 1:
-          statusText = 'DOWNLOADING'
-          break
-        case 2:
-          statusText = 'CONVERTING'
-          break
-        case 3:
-          statusText = 'UPLOADING'
-          break
-        case 4:
-          statusText = 'DEPLOYED'
-          break
-        case 5:
-          statusText = 'ERRORED'
-          break
-      }
+      const statusText = proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
 
-      // TRELLO post
-      if (media.creator === 0) {
+      if (media.creator === proto.stringToEnum(mediaProto, 'CreatorType', 'Trello')) {
         let commentText = `${statusText}: Progress **${progress}%**`
         if (host) {
           commentText += ` (_${host}_)`
