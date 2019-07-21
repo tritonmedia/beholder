@@ -48,7 +48,7 @@ const init = async () => {
 
       const statusText = proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
 
-      if (media.creator === proto.stringToEnum(mediaProto, 'CreatorType', 'Trello')) {
+      if (media.creator === proto.stringToEnum(mediaProto, 'CreatorType', 'TRELLO')) {
         let commentText = `${statusText}: Progress **${progress}%**`
         if (host) {
           commentText += ` (_${host}_)`
