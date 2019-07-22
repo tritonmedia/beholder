@@ -11,6 +11,7 @@ const path = require('path')
 const logger = require('pino')({
   name: path.basename(__filename)
 })
+const request = require('request-promise-native')
 
 const dyn = require('triton-core/dynamics')
 const Config = require('triton-core/config')
@@ -76,6 +77,23 @@ const init = async () => {
           commentText += ` (_${host}_)`
         }
         await comment(media.creatorId, commentText)
+      }
+
+      // post to telegram
+      if (media.status === proto.stringToEnum(telemetryProgressProto, 'TelemetryStatusEntry', 'DEPLOYED')) {
+        // telegram code
+        // TODO(jaredallard): move this outside
+        if (config.instance.telegram && config.instance.telegram.enabled) {
+          logger.info(`informing telegram that media '${mediaId}' is available`)
+          await request({
+            url: `https://api.telegram.org/bot${config.keys.telegram.token}/sendMessage`,
+            qs: {
+              chat_id: config.instance.telegram.channel,
+              text: `*New Anime:* ${media.name}\nKitsu: https://kitsu.io/anime/${media.metadataId}`,
+              parse_mode: 'markdown'
+            }
+          })
+        }
       }
     } catch (err) {
       logger.warn(`failed to update media progress`, err.message || err)
