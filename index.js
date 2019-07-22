@@ -94,6 +94,17 @@ const init = async () => {
             }
           })
         }
+
+        // tell emby to refresh
+        if (config.keys.emby && config.keys.emby.token && config.instance.emby && config.instance.emby.enabled) {
+          logger.info(`telling emby to refresh at ${config.instance.emby.host}`)
+          await request({
+            url: `${config.instance.emby.host}/emby/library/refresh`,
+            qs: {
+              api_key: config.keys.emby.token
+            }
+          })
+        }
       }
     } catch (err) {
       logger.warn(`failed to update media progress`, err.message || err)
