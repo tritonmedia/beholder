@@ -17,13 +17,29 @@ const Config = require('triton-core/config')
 const AMQP = require('triton-core/amqp')
 const Storage = require('triton-core/db')
 const proto = require('triton-core/proto')
+const Prom = require('triton-core/prom')
 
 const init = async () => {
   const config = await Config('events')
   const trello = new Trello(config.keys.trello.key, config.keys.trello.token)
 
+  const prom = Prom.new('beholder')
+  Prom.expose()
+  const metrics = {
+    progress_updates_total: new prom.Counter({
+      name: 'beholder_progress_updates_total',
+      help: 'Total number of messages processed in this processes lifetime',
+      labelNames: ['status']
+    }),
+    trello_comments_total: new prom.Counter({
+      name: 'beholder_trello_comments',
+      help: 'Total trello comments crreated in this processes lifetime',
+      labelNames: []
+    })
+  }
+
   const db = new Storage()
-  const amqp = new AMQP(dyn('rabbitmq'), 100)
+  const amqp = new AMQP(dyn('rabbitmq'), 100, 2, prom)
   await amqp.connect()
 
   const telemetryProgressProto = await proto.load('api.TelemetryProgress')
@@ -35,6 +51,8 @@ const init = async () => {
     await trello.makeRequest('post', `/1/cards/${cardId}/actions/comments`, {
       text: text || 'Failed to retrieve comment text.'
     })
+
+    metrics.trello_comments_total.inc()
   }
 
   amqp.listen('v1.telemetry.progress', async rmsg => {
@@ -44,9 +62,13 @@ const init = async () => {
       const { mediaId, status, progress, host } = msg
 
       logger.info('processing progress update on media', mediaId, 'status', status, 'percent', progress)
-      const media = await db.getByID(mediaId)
-
       const statusText = proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
+
+      metrics.progress_updates_total.inc({
+        status: statusText.toLowerCase()
+      })
+
+      const media = await db.getByID(mediaId)
 
       if (media.creator === proto.stringToEnum(mediaProto, 'CreatorType', 'TRELLO')) {
         let commentText = `${statusText}: Progress **${progress}%**`
@@ -57,7 +79,7 @@ const init = async () => {
       }
     } catch (err) {
       logger.warn(`failed to update media progress`, err.message || err)
-      return rmsg.ack() // TODO: maybe just drop this
+      return rmsg.ack()
     }
 
     return rmsg.ack()
