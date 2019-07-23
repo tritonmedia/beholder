@@ -56,29 +56,40 @@ const init = async () => {
     metrics.trello_comments_total.inc()
   }
 
-  amqp.listen('v1.telemetry.progress', async rmsg => {
-    try {
-      const msg = await proto.decode(telemetryProgressProto, rmsg.message.content)
+  const lists = config.instance.flow_ids
 
-      const { mediaId, status, progress, host } = msg
+  amqp.listen('v1.telemetry.status', async rmsg => {
+    const msg = proto.decode(telemetryProgressProto, rmsg.message.content)
+    const { mediaId, status } = msg
 
-      logger.info('processing progress update on media', mediaId, 'status', status, 'percent', progress)
-      const statusText = proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
+    logger.info(`processing status update for media ${mediaId}, status: ${status}`)
 
-      metrics.progress_updates_total.inc({
-        status: statusText.toLowerCase()
+    await db.updateStatus(mediaId, status)
+
+    if (process.env.NO_TRELLO) {
+      return rmsg.ack()
+    }
+
+    const statusText = await proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
+
+    const media = await db.getByID(mediaId)
+
+    if (media.creator !== 1) {
+      return logger.warn('skipping Trello update for non-trello media', mediaId)
+    }
+
+    const listPointer = lists[statusText.toLowerCase()]
+    if (listPointer) {
+      logger.info(`moving media card ${mediaId} (card id ${media.creatorId})`)
+      await trello.makeRequest('put', `/1/cards/${media.creatorId}`, {
+        idList: listPointer,
+        pos: 2
       })
+    } else {
+      logger.warn('unable to find list for status', status, `(${statusText})`, `avail ([${Object.keys(lists)}])`)
+    }
 
-      const media = await db.getByID(mediaId)
-
-      if (media.creator === proto.stringToEnum(mediaProto, 'CreatorType', 'TRELLO')) {
-        let commentText = `${statusText}: Progress **${progress}%**`
-        if (host) {
-          commentText += ` (_${host}_)`
-        }
-        await comment(media.creatorId, commentText)
-      }
-
+    try {
       // post to telegram
       if (media.status === proto.stringToEnum(telemetryProgressProto, 'TelemetryStatusEntry', 'DEPLOYED')) {
         // telegram code
@@ -105,6 +116,35 @@ const init = async () => {
             }
           })
         }
+      }
+    } catch (err) {
+      logger.warn('failed to run deployed hooks:', err.message || err)
+    }
+
+    rmsg.ack()
+  })
+
+  amqp.listen('v1.telemetry.progress', async rmsg => {
+    try {
+      const msg = await proto.decode(telemetryProgressProto, rmsg.message.content)
+
+      const { mediaId, status, progress, host } = msg
+
+      logger.info('processing progress update on media', mediaId, 'status', status, 'percent', progress)
+      const statusText = proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
+
+      metrics.progress_updates_total.inc({
+        status: statusText.toLowerCase()
+      })
+
+      const media = await db.getByID(mediaId)
+
+      if (media.creator === proto.stringToEnum(mediaProto, 'CreatorType', 'TRELLO')) {
+        let commentText = `${statusText}: Progress **${progress}%**`
+        if (host) {
+          commentText += ` (_${host}_)`
+        }
+        await comment(media.creatorId, commentText)
       }
     } catch (err) {
       logger.warn(`failed to update media progress`, err.message || err)
