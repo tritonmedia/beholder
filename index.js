@@ -44,6 +44,7 @@ const init = async () => {
   await amqp.connect()
 
   const telemetryProgressProto = await proto.load('api.TelemetryProgress')
+  const telemetryStatusProto = await proto.load('api.TelemetryStatus')
   const mediaProto = await proto.load('api.Media')
 
   const comment = async (cardId, text) => {
@@ -59,7 +60,7 @@ const init = async () => {
   const lists = config.instance.flow_ids
 
   amqp.listen('v1.telemetry.status', async rmsg => {
-    const msg = proto.decode(telemetryProgressProto, rmsg.message.content)
+    const msg = proto.decode(telemetryStatusProto, rmsg.message.content)
     const { mediaId, status } = msg
 
     logger.info(`processing status update for media ${mediaId}, status: ${status}`)
@@ -70,7 +71,7 @@ const init = async () => {
       return rmsg.ack()
     }
 
-    const statusText = await proto.enumToString(telemetryProgressProto, 'TelemetryStatusEntry', status)
+    const statusText = await proto.enumToString(telemetryStatusProto, 'TelemetryStatusEntry', status)
 
     const media = await db.getByID(mediaId)
 
@@ -91,7 +92,7 @@ const init = async () => {
 
     try {
       // post to telegram
-      if (media.status === proto.stringToEnum(telemetryProgressProto, 'TelemetryStatusEntry', 'DEPLOYED')) {
+      if (media.status === proto.stringToEnum(telemetryStatusProto, 'TelemetryStatusEntry', 'DEPLOYED')) {
         // telegram code
         // TODO(jaredallard): move this outside
         if (config.instance.telegram && config.instance.telegram.enabled) {
