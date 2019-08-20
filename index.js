@@ -75,19 +75,18 @@ const init = async () => {
 
     const media = await db.getByID(mediaId)
 
-    if (media.creator !== 1) {
-      return logger.warn('skipping Trello update for non-trello media', mediaId)
-    }
-
-    const listPointer = lists[statusText.toLowerCase()]
-    if (listPointer) {
-      logger.info(`moving media card ${mediaId} (card id ${media.creatorId})`)
-      await trello.makeRequest('put', `/1/cards/${media.creatorId}`, {
-        idList: listPointer,
-        pos: 2
-      })
-    } else {
-      logger.warn('unable to find list for status', status, `(${statusText})`, `avail ([${Object.keys(lists)}])`)
+    // TRELLO Movement
+    if (media.creator === 1) {
+      const listPointer = lists[statusText.toLowerCase()]
+      if (listPointer) {
+        logger.info(`moving media card ${mediaId} (card id ${media.creatorId})`)
+        await trello.makeRequest('put', `/1/cards/${media.creatorId}`, {
+          idList: listPointer,
+          pos: 2
+        })
+      } else {
+        logger.warn('unable to find list for status', status, `(${statusText})`, `avail ([${Object.keys(lists)}])`)
+      }
     }
 
     try {
