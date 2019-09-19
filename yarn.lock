@@ -1989,9 +1989,9 @@ trello@^0.9.1:
     restler "~3.3.0"
 
 triton-core@^1.12.3:
-  version "1.27.0"
-  resolved "https://registry.yarnpkg.com/triton-core/-/triton-core-1.27.0.tgz#46d4dd21eae5f7e67468cd87c4cea21c4cf6e2ff"
-  integrity sha512-7e2mZ8u1KAF30tX0XqWB9QLvoH+e6uDuQPAPULzfyJDin+FIWr4hNlgglUpsBAU3YGkR2gcFA75H5gsvf1Lx1Q==
+  version "1.27.1"
+  resolved "https://registry.yarnpkg.com/triton-core/-/triton-core-1.27.1.tgz#61d6e4e82dac866601344af7b22758eccdfe40d1"
+  integrity sha512-uNRBnwSfJVda7maDp/TnP5PLBvyEST0JxPKovbwZg1mj6MXD4ltZD21cPZRNljPcZQTZvP1ffBkrfmPHIOREZQ==
   dependencies:
     amqp-connection-manager "^3.0.0"
     amqplib "^0.5.3"
