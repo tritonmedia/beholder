@@ -1,7 +1,7 @@
 jobs:
   build:
     docker:
-    - image: docker:19.03.5
+    - image: docker:19.03.8
     steps:
     - checkout
     - setup_remote_docker:
@@ -20,4 +20,8 @@ workflows:
     jobs:
     - build:
         context: Docker
+        filters:
+          branches:
+            only:
+            - master
   version: 2
